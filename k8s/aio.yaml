@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    app: hello
+    tier: frontend
+spec:
+  type: LoadBalancer
+  ports:
+    # the port that this service should serve on
+  - port: 4000
+  selector:
+    app: hello
+    tier: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: observer
+  labels:
+    app: hello
+    tier: frontend
+spec:
+  type: LoadBalancer
+  ports:
+    # the port that this service should serve on
+  - port: 4001
+  selector:
+    app: hello
+    tier: frontend
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: frontend
+  # these labels can be applied automatically
+  # from the labels in the pod template if not set
+  labels:
+    app: hello
+    tier: frontend
+spec:
+  # this replicas value is default
+  # modify it according to your case
+  replicas: 3
+  # selector can be applied automatically
+  # from the labels in the pod template if not set
+  # selector:
+  #   app: guestbook
+  #   tier: frontend
+  template:
+    metadata:
+      labels:
+        app: hello
+        tier: frontend
+    spec:
+      containers:
+      - name: hello
+        image: hello:release
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        env:
+        - name: PORT
+          value: "4000"
+        - name: MY_BASENAME
+          value: hello
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: DATABASE_URL
+          value: "postgres://postgres:postgres@192.168.1.140/hello_prod"
+        - name: REPLACE_OS_VARS
+          value: "true"
+        - name: RELEASE_CONFIG_DIR
+          value: /beamconfig
+        - name: ERLANG_COOKIE
+          valueFrom:
+            secretKeyRef:
+              name: app-config
+              key: erlang-cookie
+        ports:
+        - containerPort: 4000
+        - containerPort: 4001
+        volumeMounts:
+        - name: config-volume
+          mountPath: /beamconfig
+      volumes:
+      - name: config-volume
+        configMap:
+          name: vm-config

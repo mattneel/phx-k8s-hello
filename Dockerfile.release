@@ -1,0 +1,8 @@
+FROM elixir:1.5.0
+ENV DEBIAN_FRONTEND=noninteractive
+EXPOSE 8000
+ENV PORT=8000 MIX_ENV=prod REPLACE_OS_VARS=true SHELL=/bin/bash
+WORKDIR /app
+COPY ./hello.tar.gz ./
+RUN tar xfz hello.tar.gz
+ENTRYPOINT ["bin/hello", "foreground"]
